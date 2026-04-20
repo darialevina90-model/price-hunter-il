@@ -432,13 +432,12 @@ const IL_CUSTOMS_THRESHOLD_ILS = 75;
 const IL_VAT = 0.17;
 const IL_IMPORT_DUTY = 0.12;
 
-// Stores known to ship to Israel
+// Stores confirmed to ship to Israel
 const IL_WHITELIST = [
   'amazon', 'ebay', 'aliexpress', 'iherb', 'banggood',
-  'walmart', 'bestbuy', 'newegg', 'bhphotovideo', 'adorama',
-  'vitacost', 'lookfantastic', 'feelunique', 'notino',
-  'asos', 'zara', 'nike', 'adidas', 'myprotein', 'gymshark',
-  'apple', 'samsung', 'lenovo', 'dell', 'hp', 'asus', 'zavvi', 'thehut'
+  'bhphotovideo', 'adorama', 'lookfantastic', 'notino',
+  'asos', 'nike', 'adidas', 'myprotein', 'gymshark',
+  'zavvi', 'makeupstore', 'temu'
 ];
 
 function shipsToIsrael(source) {
@@ -539,12 +538,13 @@ async function agentNormalizer(searchResults) {
     // Only include stores that ship to Israel
     if (!shipsToIsrael(item.source)) return null;
     const withImport = addImportCosts(baseILS);
-    // Fix link — prefer product_link, then link, then build Google Shopping search
-    const link = item.product_link || item.link ||
-      `https://www.google.com/search?q=${encodeURIComponent(item.title)}&tbm=shop`;
+    // Fix link — use best available direct URL
+    const link = item.product_link || item.buying_link ||
+      (item.sellers && item.sellers[0] && item.sellers[0].link) ||
+      item.link || null;
     return {
       name: item.title,
-      source: item.source || 'Online Store',
+      source: item.source || 'Israeli Store',
       link,
       priceILS: Math.round(withImport),
       baseILS: Math.round(baseILS),
@@ -617,18 +617,21 @@ function renderResults({ cheapestOverall, cheapestIsrael, mostExpensiveIsrael, v
   }
 
   function makeCard(item, label, cls) {
+    const hasLink = item.link && item.link !== '#';
+    const tag = hasLink ? 'a' : 'div';
+    const linkAttr = hasLink ? `href="${item.link}" target="_blank" rel="noopener"` : '';
     return `
-      <a class="item-card ${cls}" href="${item.link}" target="_blank" rel="noopener">
+      <${tag} class="item-card ${cls}" ${linkAttr}>
         <div>
           <div class="item-rank">${label}</div>
           <div class="item-name">${item.name}</div>
-          <div class="item-source">${item.source} · ${item.location === 'israel' ? '🇮🇱 Israel' : '🌐 Abroad'}</div>
+          <div class="item-source">${item.source} · ${item.location === 'israel' ? '🇮🇱 Israel' : '🌐 Abroad'}${!hasLink ? ' · <span style="color:var(--muted)">no direct link</span>' : ''}</div>
         </div>
         <div>
           <div class="price-ils">₪${item.priceILS.toLocaleString()}</div>
           <div class="price-note">${item.note}</div>
         </div>
-      </a>`;
+      </${tag}>`;
   }
 
   function makeSection(title, cards) {
