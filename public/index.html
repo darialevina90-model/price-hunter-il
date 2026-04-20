@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Price Hunter IL</title>
+<link rel="icon" type="image/png" href="/avatar.png" />
+<link rel="apple-touch-icon" href="/avatar.png" />
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#00e5ff" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="Price Hunter IL" />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c28;
+    --border: #2a2a3d;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --text: #e8e8f0;
+    --muted: #6b6b8a;
+    --success: #00d68f;
+    --warn: #ffb347;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  header { margin-bottom: 48px; }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .logo::before {
+    content: '';
+    display: inline-block;
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 56px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+
+  h1 span { color: var(--accent); }
+
+  .subtitle {
+    margin-top: 12px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .search-section { margin-bottom: 32px; }
+
+  .search-box {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.08);
+  }
+
+  .search-input::placeholder { color: var(--muted); font-weight: 400; }
+
+  .search-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 10px;
+    padding: 16px 28px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: transform 0.15s, opacity 0.15s;
+    white-space: nowrap;
+  }
+
+  .search-btn:hover { opacity: 0.85; }
+  .search-btn:active { transform: scale(0.97); }
+  .search-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .pipeline { display: none; margin-bottom: 32px; }
+  .pipeline.visible { display: block; }
+
+  .pipeline-title {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  .agents { display: flex; position: relative; }
+
+  .agent {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 12px 10px;
+    text-align: center;
+    position: relative;
+    transition: border-color 0.3s, background 0.3s;
+  }
+
+  .agent:first-child { border-radius: 8px 0 0 8px; }
+  .agent:last-child { border-radius: 0 8px 8px 0; }
+  .agent.active { border-color: var(--accent); background: rgba(0,229,255,0.06); }
+  .agent.done { border-color: var(--success); background: rgba(0,214,143,0.05); }
+  .agent.error { border-color: var(--accent2); background: rgba(255,107,53,0.05); }
+
+  .agent-icon { font-size: 18px; margin-bottom: 4px; }
+
+  .agent-name {
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .agent.active .agent-name { color: var(--accent); }
+  .agent.done .agent-name { color: var(--success); }
+
+  .agent-status {
+    font-size: 9px;
+    color: var(--muted);
+    margin-top: 2px;
+    height: 12px;
+  }
+
+  .agent.active .agent-status { color: var(--accent); }
+
+  .agent:not(:last-child)::after {
+    content: '→';
+    position: absolute;
+    right: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--border);
+    font-size: 14px;
+    z-index: 2;
+    background: var(--bg);
+    padding: 0 1px;
+  }
+
+  .results { display: none; }
+  .results.visible { display: block; }
+
+  .results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 20px;
+  }
+
+  .results-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .results-meta { font-size: 11px; color: var(--muted); }
+
+  .verdict-box {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .verdict-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+
+  .verdict-label {
+    font-size: 10px;
+    color: var(--accent);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .verdict-text {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .items-grid { display: grid; gap: 12px; }
+
+  .result-section {
+    margin-bottom: 28px;
+  }
+
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .item-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    align-items: center;
+    transition: border-color 0.2s;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .item-card:hover { border-color: var(--accent); }
+  .item-card.best { border-color: var(--success); background: rgba(0,214,143,0.04); }
+  .item-card.best-il { border-color: var(--warn); background: rgba(255,179,71,0.04); }
+  .item-card.expensive-il { border-color: var(--accent2); background: rgba(255,107,53,0.04); }
+
+  .item-rank {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .item-card.best .item-rank { color: var(--success); }
+  .item-card.best-il .item-rank { color: var(--warn); }
+  .item-card.expensive-il .item-rank { color: var(--accent2); }
+
+  .item-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.3;
+    margin-bottom: 4px;
+  }
+
+  .item-source { font-size: 11px; color: var(--muted); }
+
+  .price-ils {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .item-card.best .price-ils { color: var(--success); }
+  .item-card.best-il .price-ils { color: var(--warn); }
+  .item-card.expensive-il .price-ils { color: var(--accent2); }
+
+  .price-note {
+    font-size: 10px;
+    color: var(--muted);
+    text-align: right;
+    margin-top: 2px;
+  }
+
+  .error-box {
+    background: var(--surface);
+    border: 1px solid var(--accent2);
+    border-radius: 10px;
+    padding: 20px;
+    color: var(--accent2);
+    font-size: 13px;
+    display: none;
+    margin-bottom: 24px;
+  }
+
+  .error-box.visible { display: block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .spinner {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border: 2px solid transparent;
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">
+      <img src="/avatar.png" alt="Price Hunter" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--accent);margin-right:4px;" />
+      Price Hunter IL
+    </div>
+    <h1>Buy it <span>cheaper.</span></h1>
+    <p class="subtitle">Multi-agent price comparison — Israel vs the world → all in ₪</p>
+  </header>
+
+  <div class="search-section">
+    <div class="search-box">
+      <input
+        class="search-input"
+        id="searchInput"
+        type="text"
+        placeholder="e.g. Sony WH-1000XM5, iPhone 15 Pro 256GB, Vitamin D 5000IU..."
+      />
+      <button class="search-btn" id="searchBtn" onclick="runPipeline()">Hunt →</button>
+    </div>
+  </div>
+
+  <div class="pipeline" id="pipeline">
+    <div class="pipeline-title">Agent pipeline</div>
+    <div class="agents">
+      <div class="agent" id="agent-parser">
+        <div class="agent-icon">🧠</div>
+        <div class="agent-name">Parser</div>
+        <div class="agent-status" id="status-parser">waiting</div>
+      </div>
+      <div class="agent" id="agent-search">
+        <div class="agent-icon">🔍</div>
+        <div class="agent-name">Search</div>
+        <div class="agent-status" id="status-search">waiting</div>
+      </div>
+      <div class="agent" id="agent-normalizer">
+        <div class="agent-icon">💱</div>
+        <div class="agent-name">Normalizer</div>
+        <div class="agent-status" id="status-normalizer">waiting</div>
+      </div>
+      <div class="agent" id="agent-ranker">
+        <div class="agent-icon">🏆</div>
+        <div class="agent-name">Ranker</div>
+        <div class="agent-status" id="status-ranker">waiting</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-box" id="errorBox"></div>
+  <div class="results" id="results"></div>
+
+</div>
+
+<script>
+// All API calls go to our own Vercel backend — zero keys in the browser
+const API = '/api/search';
+
+const USD_TO_ILS = 3.7;
+const EUR_TO_ILS = 4.0;
+const IL_CUSTOMS_THRESHOLD_ILS = 75;
+const IL_VAT = 0.17;
+const IL_IMPORT_DUTY = 0.12;
+
+// Stores known to ship to Israel
+const IL_WHITELIST = [
+  'amazon', 'ebay', 'aliexpress', 'iherb', 'banggood',
+  'walmart', 'bestbuy', 'newegg', 'bhphotovideo', 'adorama',
+  'vitacost', 'lookfantastic', 'feelunique', 'notino',
+  'asos', 'zara', 'nike', 'adidas', 'myprotein', 'gymshark',
+  'apple', 'samsung', 'lenovo', 'dell', 'hp', 'asus', 'zavvi', 'thehut'
+];
+
+function shipsToIsrael(source) {
+  if (!source) return false;
+  const s = source.toLowerCase();
+  return IL_WHITELIST.some(store => s.includes(store));
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function setAgent(id, state, statusText) {
+  const el = document.getElementById('agent-' + id);
+  const st = document.getElementById('status-' + id);
+  el.className = 'agent ' + state;
+  st.innerHTML = state === 'active'
+    ? `<span class="spinner"></span>${statusText}`
+    : statusText;
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = '⚠ ' + msg;
+  box.classList.add('visible');
+}
+
+function clearError() {
+  document.getElementById('errorBox').classList.remove('visible');
+}
+
+// ─── Backend caller ───────────────────────────────────────────────────────────
+async function callBackend(action, payload) {
+  const res = await fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action, payload })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || `Server error ${res.status}`);
+  return data;
+}
+
+// ─── AGENT 1: Query Parser ────────────────────────────────────────────────────
+async function agentParser(rawInput) {
+  setAgent('parser', 'active', 'parsing...');
+  const { result } = await callBackend('groq', {
+    systemPrompt: `You are a search query optimizer for Google Shopping.
+Extract the clearest, most specific product search query from user input.
+Respond with ONLY valid JSON, no markdown, no preamble:
+{ "query": "optimized search string in English", "category": "electronics|appliances|clothing|sports|books|other", "brand": "brand or null" }`,
+    userMessage: `User wants to buy: ${rawInput}`
+  });
+
+  try {
+    const parsed = JSON.parse(result.replace(/```json|```/g, '').trim());
+    setAgent('parser', 'done', parsed.query);
+    return parsed;
+  } catch {
+    setAgent('parser', 'done', rawInput);
+    return { query: rawInput, category: 'other', brand: null };
+  }
+}
+
+// ─── AGENT 2: Search Agent ────────────────────────────────────────────────────
+async function agentSearch(parsedQuery) {
+  setAgent('search', 'active', 'searching...');
+
+  const [abroadRes, ilRes] = await Promise.allSettled([
+    callBackend('serp', { query: parsedQuery.query, country: 'us' }),
+    callBackend('serp', { query: parsedQuery.query + ' Israel', country: 'il' })
+  ]);
+
+  const abroad = abroadRes.status === 'fulfilled' ? (abroadRes.value.results || []).slice(0, 8) : [];
+  const israel = ilRes.status === 'fulfilled' ? (ilRes.value.results || []).slice(0, 5) : [];
+
+  setAgent('search', 'done', `${abroad.length + israel.length} results`);
+  return { abroad, israel };
+}
+
+// ─── AGENT 3: Price Normalizer ────────────────────────────────────────────────
+async function agentNormalizer(searchResults) {
+  setAgent('normalizer', 'active', 'converting...');
+
+  function parsePrice(priceStr) {
+    if (!priceStr) return null;
+    const num = parseFloat(priceStr.replace(/[^0-9.]/g, ''));
+    if (isNaN(num)) return null;
+    if (priceStr.includes('€')) return num * EUR_TO_ILS;
+    return num * USD_TO_ILS;
+  }
+
+  function addImportCosts(priceILS) {
+    if (priceILS <= IL_CUSTOMS_THRESHOLD_ILS) return priceILS;
+    return priceILS * (1 + IL_VAT + IL_IMPORT_DUTY);
+  }
+
+  const abroad = searchResults.abroad.map(item => {
+    const baseILS = parsePrice(item.price);
+    if (!baseILS) return null;
+    // Only include stores that ship to Israel
+    if (!shipsToIsrael(item.source)) return null;
+    const withImport = addImportCosts(baseILS);
+    // Fix link — prefer product_link, then link, then build Google Shopping search
+    const link = item.product_link || item.link ||
+      `https://www.google.com/search?q=${encodeURIComponent(item.title)}&tbm=shop`;
+    return {
+      name: item.title,
+      source: item.source || 'Online Store',
+      link,
+      priceILS: Math.round(withImport),
+      baseILS: Math.round(baseILS),
+      location: 'abroad',
+      note: baseILS > IL_CUSTOMS_THRESHOLD_ILS ? '+VAT & import duty' : 'no import tax'
+    };
+  }).filter(Boolean);
+
+  const israel = searchResults.israel.map(item => {
+    const priceILS = parsePrice(item.price);
+    if (!priceILS) return null;
+    const link = item.product_link || item.link ||
+      `https://www.google.com/search?q=${encodeURIComponent(item.title)}&tbm=shop`;
+    return {
+      name: item.title,
+      source: item.source || 'Israeli Store',
+      link,
+      priceILS: Math.round(priceILS),
+      baseILS: Math.round(priceILS),
+      location: 'israel',
+      note: 'local price incl. VAT'
+    };
+  }).filter(Boolean);
+
+  setAgent('normalizer', 'done', 'prices in ₪');
+  return [...abroad, ...israel];
+}
+
+// ─── AGENT 4: Ranker + Verdict ────────────────────────────────────────────────
+async function agentRanker(items, originalQuery) {
+  setAgent('ranker', 'active', 'ranking...');
+
+  const sorted = [...items].sort((a, b) => a.priceILS - b.priceILS);
+
+  // 3 cheapest overall (abroad + israel mixed)
+  const cheapestOverall = sorted.slice(0, 3);
+
+  // Israel only, sorted by price
+  const israelItems = items
+    .filter(i => i.location === 'israel')
+    .sort((a, b) => a.priceILS - b.priceILS);
+
+  const cheapestIsrael = israelItems.length > 0 ? israelItems[0] : null;
+  const mostExpensiveIsrael = israelItems.length > 1 ? israelItems[israelItems.length - 1] : null;
+
+  // Build summary for verdict
+  const summary = cheapestOverall.map((i, idx) =>
+    `${idx + 1}. ${i.name} at ${i.source} (${i.location}) — ₪${i.priceILS} (${i.note})`
+  ).join('\n');
+
+  const { result: verdict } = await callBackend('groq', {
+    systemPrompt: `You are a smart shopping advisor for someone in Israel.
+Write a 2-sentence verdict: where to buy and how much they save vs buying locally.
+Mention shipping/returns complexity if buying abroad. Max 50 words. Be punchy and direct.`,
+    userMessage: `Product: ${originalQuery}\n\nTop results:\n${summary}${cheapestIsrael ? `\nCheapest in Israel: ₪${cheapestIsrael.priceILS} at ${cheapestIsrael.source}` : ''}`
+  });
+
+  setAgent('ranker', 'done', 'done ✓');
+  return { cheapestOverall, cheapestIsrael, mostExpensiveIsrael, verdict };
+}
+
+// ─── Render ───────────────────────────────────────────────────────────────────
+function renderResults({ cheapestOverall, cheapestIsrael, mostExpensiveIsrael, verdict }, query) {
+  const el = document.getElementById('results');
+
+  if (!cheapestOverall.length && !cheapestIsrael) {
+    el.innerHTML = `<div style="color:var(--muted);font-size:13px;">No results found — try a different product name.</div>`;
+    el.classList.add('visible');
+    return;
+  }
+
+  function makeCard(item, label, cls) {
+    return `
+      <a class="item-card ${cls}" href="${item.link}" target="_blank" rel="noopener">
+        <div>
+          <div class="item-rank">${label}</div>
+          <div class="item-name">${item.name}</div>
+          <div class="item-source">${item.source} · ${item.location === 'israel' ? '🇮🇱 Israel' : '🌐 Abroad'}</div>
+        </div>
+        <div>
+          <div class="price-ils">₪${item.priceILS.toLocaleString()}</div>
+          <div class="price-note">${item.note}</div>
+        </div>
+      </a>`;
+  }
+
+  function makeSection(title, cards) {
+    return `
+      <div class="result-section">
+        <div class="section-title">${title}</div>
+        <div class="items-grid">${cards}</div>
+      </div>`;
+  }
+
+  // Section 1: cheapest overall
+  const overallCards = cheapestOverall.map((item, i) =>
+    makeCard(item, i === 0 ? '🏆 CHEAPEST' : `#${i + 1}`, i === 0 ? 'best' : '')
+  ).join('');
+
+  // Section 2: cheapest in Israel
+  const ilCheapCard = cheapestIsrael
+    ? makeCard(cheapestIsrael, '💚 CHEAPEST LOCAL', 'best-il')
+    : `<div style="color:var(--muted);font-size:12px;padding:12px;">No Israeli store results found</div>`;
+
+  // Section 3: most expensive in Israel
+  const ilExpCard = mostExpensiveIsrael
+    ? makeCard(mostExpensiveIsrael, '💸 MOST EXPENSIVE LOCAL', 'expensive-il')
+    : `<div style="color:var(--muted);font-size:12px;padding:12px;">Only one Israeli store found</div>`;
+
+  el.innerHTML = `
+    <div class="results-header">
+      <div class="results-title">Results for "${query}"</div>
+    </div>
+    <div class="verdict-box">
+      <div class="verdict-label">▸ AI verdict</div>
+      <div class="verdict-text">${verdict}</div>
+    </div>
+    ${makeSection('🌍 Cheapest overall (ships to Israel)', overallCards)}
+    ${makeSection('🇮🇱 Israeli stores', ilCheapCard + (mostExpensiveIsrael ? ilExpCard : ''))}
+  `;
+  el.classList.add('visible');
+}
+
+// ─── Orchestrator ─────────────────────────────────────────────────────────────
+async function runPipeline() {
+  const query = document.getElementById('searchInput').value.trim();
+  if (!query) { showError('Enter a product name first'); return; }
+
+  clearError();
+  document.getElementById('results').classList.remove('visible');
+  document.getElementById('results').innerHTML = '';
+
+  const btn = document.getElementById('searchBtn');
+  btn.disabled = true;
+  btn.textContent = 'Hunting...';
+
+  document.getElementById('pipeline').classList.add('visible');
+  ['parser','search','normalizer','ranker'].forEach(id => setAgent(id, '', 'waiting'));
+
+  try {
+    const parsed     = await agentParser(query);
+    const raw        = await agentSearch(parsed);
+    const normalized = await agentNormalizer(raw);
+    const final      = await agentRanker(normalized, query);
+    renderResults(final, query);
+  } catch (err) {
+    showError(err.message || 'Something went wrong');
+    ['parser','search','normalizer','ranker'].forEach(id => {
+      if (document.getElementById('agent-' + id).classList.contains('active'))
+        setAgent(id, 'error', 'error');
+    });
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Hunt →';
+  }
+}
+
+document.getElementById('searchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') runPipeline();
+});
+</script>
+</body>
+</html>
