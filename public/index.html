@@ -626,7 +626,7 @@ function renderResults({ cheapestOverall, cheapestIsrael, mostExpensiveIsrael, v
         <div>
           <div class="item-rank">${label}</div>
           <div class="item-name">${item.name}</div>
-          <div class="item-source">${item.source} · ${item.location === 'israel' ? '🇮🇱 Israel' : '🌐 Abroad'}${!hasLink ? ' · <span style="color:var(--muted)">no direct link</span>' : ''}</div>
+          <div class="item-source">${item.source} · ${item.location === 'israel' ? '🇮🇱 Local store' : '📦 Ships to Israel'}${!hasLink ? ' · <span style="color:var(--muted)">no direct link</span>' : ''}</div>
         </div>
         <div>
           <div class="price-ils">₪${item.priceILS.toLocaleString()}</div>
@@ -667,7 +667,7 @@ function renderResults({ cheapestOverall, cheapestIsrael, mostExpensiveIsrael, v
       <div class="verdict-text">${verdict}</div>
     </div>
     ${makeSection('🌍 Cheapest overall (ships to Israel)', overallCards)}
-    ${makeSection('🇮🇱 Israeli stores', ilCheapCard + (mostExpensiveIsrael ? ilExpCard : ''))}
+    ${makeSection('🇮🇱 Local Israeli stores', ilCheapCard + (mostExpensiveIsrael ? ilExpCard : ''))}
   `;
   el.classList.add('visible');
 }
