@@ -519,10 +519,11 @@ async function agentSearch(parsedQuery) {
 async function agentNormalizer(searchResults) {
   setAgent('normalizer', 'active', 'converting...');
 
-  function parsePrice(priceStr) {
+  function parsePrice(priceStr, alreadyILS = false) {
     if (!priceStr) return null;
     const num = parseFloat(priceStr.replace(/[^0-9.]/g, ''));
     if (isNaN(num)) return null;
+    if (alreadyILS || priceStr.includes('₪') || priceStr.includes('ILS')) return num;
     if (priceStr.includes('€')) return num * EUR_TO_ILS;
     return num * USD_TO_ILS;
   }
@@ -554,7 +555,7 @@ async function agentNormalizer(searchResults) {
   }).filter(Boolean);
 
   const israel = searchResults.israel.map(item => {
-    const priceILS = parsePrice(item.price);
+    const priceILS = parsePrice(item.price, true); // Israeli prices are already in ₪
     if (!priceILS) return null;
     const link = item.product_link || item.link ||
       `https://www.google.com/search?q=${encodeURIComponent(item.title)}&tbm=shop`;
